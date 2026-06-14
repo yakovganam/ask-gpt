@@ -16,11 +16,19 @@ optional Stop hook (see [skills/gpt-review/hooks/](skills/gpt-review/hooks/READM
 
 ## What it does
 
-After Claude finishes a coding task, this skill:
+Two modes, used at opposite ends of a task:
+
+**Code review (default) — after work, before handoff:**
 1. Collects the git diff of the changes
 2. Sends it to GPT with a context summary (requirement, tests run, results)
 3. Claude judges each finding and fixes the real ones
 4. At most one more review round (2 max), then the task is reported done
+
+**Interpretation check (`--interpret`) — before work starts:**
+Sends the user's request + Claude's planned approach to GPT and asks whether the
+plan actually matches the ask — catching scope creep, missed requirements, and
+risky assumptions *before* any code is written. Best for ambiguous or high-stakes
+requests; skip it for trivial ones.
 
 ---
 
@@ -33,6 +41,10 @@ After Claude finishes a coding task, this skill:
 | Changed lines (git diff) | Unchanged files |
 | A short summary Claude writes | `.env` / `*.pem` / `*.key` / credential files (auto-excluded) |
 | File names from git status | Common secret formats (best-effort redaction) |
+
+In **interpretation mode** (`--interpret`), the diff is replaced by the user's
+verbatim request, any project context Claude includes, and the planned approach.
+That text is redacted best-effort too, but include context deliberately.
 
 **Secret redaction is best-effort and cannot guarantee removal of all sensitive
 data.** It catches common formats (OpenAI/GitHub/Slack/AWS/Google keys, JWTs,
@@ -150,6 +162,22 @@ python ~/.claude/skills/gpt-review/review.py \
 | `--max-chars 20000` | 20000 | Truncate diff at N chars |
 | `--dry-run` | — | See what would be sent — no API call |
 | `--check-setup` | — | Print privacy notice and exit |
+| `--interpret` | — | Pre-work mode: check the plan against the request |
+| `--request "..."` | — | [interpret] the user's verbatim request |
+| `--plan "..."` | — | [interpret] Claude's planned approach |
+| `--context "..."` | — | [interpret] optional project context |
+
+### Interpretation check example
+
+```bash
+python ~/.claude/skills/gpt-review/review.py --interpret \
+  --request "make the login button blue" \
+  --plan "restyle the button AND refactor the whole auth module" \
+  --dry-run
+```
+
+GPT would flag the auth refactor as scope creep — the user only asked about a
+button color. Catching that before coding saves an entire wrong implementation.
 
 ---
 

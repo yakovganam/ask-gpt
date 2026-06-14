@@ -3,12 +3,23 @@ name: gpt-review
 description: Before handing work back to the user, send code changes to an external AI model (GPT via OpenAI) for adversarial review, then fix the real issues it finds. Run as the LAST step before any coding task is reported done. Use whenever finishing a code change and wanting a second opinion from a different AI model. Triggers on: finishing any code edit, "review before done", "check your work", "second opinion", or completing any significant implementation.
 ---
 
-# gpt-review — adversarial second-opinion before handoff
+# gpt-review — adversarial second-opinion from another AI model
 
-A second AI model (GPT via OpenAI) reviews your changes BEFORE you tell the user a
-task is done. A second model can catch independent failure modes — but it is a
-second opinion, not a proof of correctness: it can miss bugs and produce false
-positives. Tests and human review still matter for high-risk changes.
+A second AI model (GPT via OpenAI) gives an independent opinion. It can catch
+failure modes the first model missed — but it is a second opinion, not a proof of
+correctness: it can miss bugs and produce false positives. Tests and human review
+still matter for high-risk changes.
+
+There are **two modes**, used at opposite ends of a task:
+
+| Mode | When | What it checks |
+|---|---|---|
+| **Code review** (default) | AFTER work, before handoff | Does the finished diff have bugs / missed requirements? |
+| **Interpretation check** (`--interpret`) | BEFORE work starts | Does your *plan* actually match what the user asked for? |
+
+Use code review on every coding task. Use interpretation check when a request is
+ambiguous, high-stakes, or could touch surfaces beyond what was asked — catching a
+misunderstanding before writing code is far cheaper than after.
 
 Note: this skill runs when you decide it's relevant or when invoked manually.
 If the user installed the optional Stop hook (`hooks/`), finishing with unreviewed
@@ -24,6 +35,10 @@ hash so the hook lets you finish.
 | Git diff (changed lines only) | Unchanged files |
 | A short summary Claude writes | `.env`, `*.pem`, `*.key`, credential files (auto-excluded) |
 | File names from git status | Common secret formats — keys, tokens, passwords (best-effort redaction) |
+
+In **interpretation mode**, what's sent is different: the user's verbatim request,
+any project context you include, and your planned approach (no diff). This text is
+also redacted best-effort before sending.
 
 Redaction is **best-effort, not a guarantee** — proprietary token formats won't be
 caught. **Use `--dry-run`** to preview the exact payload before any API call.
@@ -64,7 +79,30 @@ Check if `~/.claude/gpt-review-config.json` exists.
 
 ---
 
-## Writing the summary
+## Interpretation check (pre-work) — optional
+
+Before starting an ambiguous or high-stakes task, verify your plan matches the ask:
+
+```bash
+python <skill-path>/review.py --interpret \
+  --request "<the user's verbatim request>" \
+  --plan "<what you intend to do, step by step>" \
+  --context "<optional: relevant project facts, protected surfaces>"
+```
+
+GPT checks whether your plan is a faithful, complete, **minimal** reading of the
+request — flagging scope creep, missed requirements, risky assumptions, and
+surfaces your plan might touch as side effects. Read its verdict, then:
+- If it surfaces a real misunderstanding → adjust your plan, or ask the user
+  before coding (especially anything under "CONFIRM BEFORE CODING:")
+- If it's a false alarm → proceed
+
+This is most valuable right after the user's request and before any edits. Skip it
+for trivial, unambiguous tasks — it adds a round-trip.
+
+---
+
+## Writing the summary (code-review mode)
 
 The reviewer only sees what you send it — a diff without context produces shallow
 or wrong critiques. The summary (2–6 lines) must include:
@@ -99,6 +137,10 @@ python <skill-path>/review.py \
 | `--max-chars 20000` | `20000` | Truncate diff at N chars |
 | `--dry-run` | — | Preview payload, no API call |
 | `--check-setup` | — | Print privacy notice and exit |
+| `--interpret` | — | Pre-work mode (see "Interpretation check" above) |
+| `--request "..."` | — | [interpret] the user's verbatim request |
+| `--plan "..."` | — | [interpret] your planned approach |
+| `--context "..."` | — | [interpret] optional project context |
 
 ---
 

@@ -38,9 +38,10 @@ PRIVACY_NOTICE = """\
 This skill sends your git diff to an external AI provider (OpenAI).
 
 WHAT GETS SENT TO THE PROVIDER:
-  - Your git diff (lines added/removed in your code)
-  - A short summary written by Claude about the change
-  - File names from git status
+  - Code-review mode: your git diff (added/removed lines), a short
+    summary written by Claude, and file names from git status.
+  - Interpretation mode (--interpret, pre-work): your verbatim request,
+    any project context Claude includes, and Claude's planned approach.
 
 AUTOMATIC PROTECTIONS (BEST-EFFORT, NOT A GUARANTEE):
   - .env / *.pem / *.key / credential files -> excluded from the diff
@@ -238,6 +239,79 @@ Format:
 - End with "MANUAL CHECK: ..." only if something genuinely needs human verification
 """
 
+INTERPRET_SYSTEM_PROMPT = """\
+You are a rigorous senior engineer acting as an INTERPRETATION checker. A coding
+agent is about to start work -- no code exists yet. You are given:
+(1) the user's verbatim request
+(2) optional project context
+(3) the agent's planned interpretation / approach
+
+Your job is to catch MISUNDERSTANDINGS before any code is written. Check:
+- Does the plan actually address what the user literally asked for?
+- What does the plan include that the user did NOT ask for? (scope creep)
+- What requirement in the request does the plan miss or gloss over?
+- What assumptions does the plan make that should be confirmed first?
+- Which existing files/surfaces could the plan touch as side effects?
+- Ambiguities in the request that would change the correct approach.
+
+Do NOT review code quality -- there is no code yet. Focus only on whether the
+plan is a faithful, complete, and MINIMAL interpretation of the request.
+If the plan is solid, say so plainly -- do not invent problems.
+
+Format:
+- One-line verdict first
+- Prioritized list: prefix each item with [critical] / [medium] / [low]
+- The gap + a concrete clarification or adjustment
+- End with "CONFIRM BEFORE CODING: ..." listing anything that needs the user's
+  confirmation before work starts (omit the line if nothing does)
+"""
+
+
+def send_review(
+    model: str, system_prompt: str, user_msg: str, dry_run: bool, label: str
+) -> Optional[bool]:
+    """Shared send path for both review types. Returns True on a successful API
+    call, None on dry-run / missing key / any error (all fail open)."""
+    if dry_run:
+        sep = "=" * 64
+        print(sep)
+        print(f"DRY RUN ({label}) -- this is exactly what would be sent to the API:")
+        print(sep)
+        print("Provider : OpenAI")
+        print(f"Model    : {model}")
+        print(f"System   : {len(system_prompt)} chars")
+        print(f"User msg : {len(user_msg)} chars")
+        print()
+        print(user_msg)
+        print(sep)
+        print("No API call was made. Redaction is best-effort -- review it yourself.")
+        return None
+
+    api_key = get_api_key()
+    if not api_key:
+        print(
+            "No API key found.\n"
+            "Options:\n"
+            "  1. Env var:   OPENAI_API_KEY=sk-...\n"
+            "  2. Key file:  ~/.claude/.openai-key.txt  (chmod 600, never commit or sync it)"
+        )
+        return None
+
+    try:
+        review, used_model, usage = call_openai(api_key, model, system_prompt, user_msg)
+        print(f"===== GPT {label} ({used_model}) =====")
+        print(review)
+        print()
+        print(f"[tokens: prompt={usage['prompt_tokens']} completion={usage['completion_tokens']}]")
+        return True
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        print(f"OpenAI API error {exc.code} (not blocking): {body[:400]}")
+        return None
+    except Exception as exc:
+        print(f"GPT review failed (not blocking): {exc}")
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Main
@@ -256,6 +330,12 @@ def main() -> None:
     parser.add_argument("--repo-path",   default="",             help="Git repo root")
     parser.add_argument("--dry-run",     action="store_true",    help="Preview payload -- no API call")
     parser.add_argument("--check-setup", action="store_true",    help="Print privacy notice and exit")
+    # Interpretation-check mode (pre-work): verify the plan matches the request
+    parser.add_argument("--interpret",   action="store_true",
+                        help="Pre-work mode: check your plan against the user's request (no git/diff)")
+    parser.add_argument("--request",     default="",             help="[interpret] the user's verbatim request")
+    parser.add_argument("--plan",        default="",             help="[interpret] your planned interpretation/approach")
+    parser.add_argument("--context",     default="",             help="[interpret] optional project context")
     args = parser.parse_args()
 
     # Load config
@@ -276,6 +356,34 @@ def main() -> None:
         sys.exit(0)
 
     model = args.model or config.get("model", "gpt-4o")
+
+    # ── Interpretation-check mode (pre-work) ──────────────────────────────
+    # Different job from code review: there is no code yet. We send the user's
+    # request + plan and ask GPT whether the plan matches the ask, BEFORE work
+    # starts. No git, no diff. The request/context/plan can contain pasted
+    # secrets, so we still redact (best-effort) before sending.
+    if args.interpret:
+        if not args.request.strip() or not args.plan.strip():
+            print("Interpret mode needs --request (the user's verbatim ask) and "
+                  "--plan (your planned approach).")
+            sys.exit(0)
+        parts = [f"--- user's verbatim request ---\n{args.request}"]
+        if args.context.strip():
+            parts.append(f"--- project context ---\n{args.context}")
+        parts.append(f"--- the agent's planned interpretation / approach ---\n{args.plan}")
+        user_msg = "\n\n".join(parts)
+        try:
+            user_msg, redacted = redact(user_msg)
+        except Exception as exc:
+            print(f"Redaction failed ({exc}) -- aborting send to be safe.")
+            sys.exit(0)
+        if redacted:
+            print(f"[gpt-review] Redacted (best-effort): {', '.join(redacted)}")
+        if len(user_msg) > args.max_chars:
+            user_msg = user_msg[: args.max_chars] + f"\n[truncated to {args.max_chars} chars]"
+        send_review(model, INTERPRET_SYSTEM_PROMPT, user_msg, args.dry_run,
+                    "interpretation check")
+        sys.exit(0)
 
     # Gather changes
     if args.text:
@@ -331,51 +439,11 @@ def main() -> None:
         user_msg += f"\n--- git status ---\n{status}"
     user_msg += f"\n--- changes (diff) ---\n{diff}{trunc_note}"
 
-    # Dry run
-    if args.dry_run:
-        sep = "=" * 64
-        print(sep)
-        print("DRY RUN -- this is exactly what would be sent to the API:")
-        print(sep)
-        print("Provider : OpenAI")
-        print(f"Model    : {model}")
-        print(f"System   : {len(SYSTEM_PROMPT)} chars (standard reviewer prompt)")
-        print(f"User msg : {len(user_msg)} chars")
-        print()
-        print(user_msg)
-        print(sep)
-        print("No API call was made. Redaction above is best-effort --")
-        print("review the payload yourself before sending.")
-        sys.exit(0)
-
-    # Get API key
-    api_key = get_api_key()
-    if not api_key:
-        print(
-            "No API key found.\n"
-            "Options:\n"
-            "  1. Env var:   OPENAI_API_KEY=sk-...\n"
-            "  2. Key file:  ~/.claude/.openai-key.txt  (chmod 600, never commit or sync it)"
-        )
-        sys.exit(0)
-
-    # Call API
-    try:
-        review, used_model, usage = call_openai(api_key, model, SYSTEM_PROMPT, user_msg)
-        print(f"===== GPT review ({used_model}) =====")
-        print(review)
-        print()
-        print(f"[tokens: prompt={usage['prompt_tokens']} completion={usage['completion_tokens']}]")
-        # Record state for the optional Stop hook (git mode only)
-        if not args.text:
-            record_review_state(args.repo_path or None)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        print(f"OpenAI API error {exc.code} (not blocking): {body[:400]}")
-        sys.exit(0)
-    except Exception as exc:
-        print(f"GPT review failed (not blocking): {exc}")
-        sys.exit(0)
+    # Send (or preview). Record state for the optional Stop hook only on a
+    # successful real review of git changes.
+    result = send_review(model, SYSTEM_PROMPT, user_msg, args.dry_run, "review")
+    if result and not args.text:
+        record_review_state(args.repo_path or None)
 
 
 if __name__ == "__main__":
