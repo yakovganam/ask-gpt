@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gpt-review/review.py
+ask-gpt/review.py
 Sends git diff + summary to an external AI model (OpenAI) for adversarial code review.
 Fails open: any API/network error prints a message and exits 0 — never blocks the agent.
 Exception: if the safety filters themselves fail, the send is ABORTED (fail closed).
@@ -10,8 +10,8 @@ Safety layers:
 - best-effort secret redaction (common key/token formats; NOT a guarantee)
 - --dry-run prints the exact payload and makes no API call
 
-Config: ~/.claude/gpt-review-config.json   (created on first-run consent)
-State:  ~/.claude/gpt-review-state/        (diff hashes for the optional Stop hook)
+Config: ~/.claude/ask-gpt-config.json   (created on first-run consent)
+State:  ~/.claude/ask-gpt-state/        (diff hashes for the optional Stop hook)
 """
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-CONFIG_PATH = Path.home() / ".claude" / "gpt-review-config.json"
-STATE_DIR = Path.home() / ".claude" / "gpt-review-state"
+CONFIG_PATH = Path.home() / ".claude" / "ask-gpt-config.json"
+STATE_DIR = Path.home() / ".claude" / "ask-gpt-state"
 
 PRIVACY_NOTICE = """\
 ================================================================
-           gpt-review -- FIRST-RUN PRIVACY NOTICE
+              Ask GPT -- FIRST-RUN PRIVACY NOTICE
 ================================================================
 
 This skill sends your git diff to an external AI provider (OpenAI).
@@ -299,7 +299,7 @@ def send_review(
 
     try:
         review, used_model, usage = call_openai(api_key, model, system_prompt, user_msg)
-        print(f"===== GPT {label} ({used_model}) =====")
+        print(f"===== Ask GPT: {label} ({used_model}) =====")
         print(review)
         print()
         print(f"[tokens: prompt={usage['prompt_tokens']} completion={usage['completion_tokens']}]")
@@ -309,7 +309,7 @@ def send_review(
         print(f"OpenAI API error {exc.code} (not blocking): {body[:400]}")
         return None
     except Exception as exc:
-        print(f"GPT review failed (not blocking): {exc}")
+        print(f"Ask GPT request failed (not blocking): {exc}")
         return None
 
 
@@ -352,7 +352,7 @@ def main() -> None:
         sys.exit(0)
 
     if config.get("enabled") is False:
-        print("gpt-review is disabled (enabled=false in ~/.claude/gpt-review-config.json).")
+        print("ask-gpt is disabled (enabled=false in ~/.claude/ask-gpt-config.json).")
         sys.exit(0)
 
     model = args.model or config.get("model", "gpt-4o")
@@ -378,7 +378,7 @@ def main() -> None:
             print(f"Redaction failed ({exc}) -- aborting send to be safe.")
             sys.exit(0)
         if redacted:
-            print(f"[gpt-review] Redacted (best-effort): {', '.join(redacted)}")
+            print(f"[ask-gpt] Redacted (best-effort): {', '.join(redacted)}")
         if len(user_msg) > args.max_chars:
             user_msg = user_msg[: args.max_chars] + f"\n[truncated to {args.max_chars} chars]"
         send_review(model, INTERPRET_SYSTEM_PROMPT, user_msg, args.dry_run,
@@ -412,7 +412,7 @@ def main() -> None:
         print(f"Sensitive-file filtering failed ({exc}) -- aborting send to be safe.")
         sys.exit(0)
     if removed:
-        print(f"[gpt-review] Excluded sensitive files: {', '.join(removed)}")
+        print(f"[ask-gpt] Excluded sensitive files: {', '.join(removed)}")
 
     if not diff.strip():
         print("After excluding sensitive files, no reviewable diff remains.")
@@ -425,7 +425,7 @@ def main() -> None:
         print(f"Secret redaction failed ({exc}) -- aborting send to be safe.")
         sys.exit(0)
     if redacted:
-        print(f"[gpt-review] Redacted from diff (best-effort): {', '.join(redacted)}")
+        print(f"[ask-gpt] Redacted from diff (best-effort): {', '.join(redacted)}")
 
     # Truncate
     trunc_note = ""

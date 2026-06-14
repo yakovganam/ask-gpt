@@ -2,7 +2,7 @@
 
 The skill alone is invoked at Claude's discretion — automatic execution is **not
 guaranteed**. This hook closes that gap: when Claude tries to finish a response
-while uncommitted changes exist that gpt-review hasn't reviewed, the hook blocks
+while uncommitted changes exist that ask-gpt hasn't reviewed, the hook blocks
 the stop once and tells Claude to run the review.
 
 ## How it stays loop-safe
@@ -14,7 +14,7 @@ the stop once and tells Claude to run the review.
 | `reviewed_hash` state | `review.py` records the diff hash after a successful review, so a reviewed state passes silently |
 | Fail open | Any error (no git, bad input, unwritable state) → the stop is allowed |
 
-State lives in `~/.claude/gpt-review-state/<repo-id>.json`. Safe to delete at any time.
+State lives in `~/.claude/ask-gpt-state/<repo-id>.json`. Safe to delete at any time.
 
 ## Install
 
@@ -29,7 +29,7 @@ Add to `~/.claude/settings.json` (all projects) or `<project>/.claude/settings.j
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/you/.claude/skills/gpt-review/hooks/stop_hook.py"
+            "command": "python3 /home/you/.claude/skills/ask-gpt/hooks/stop_hook.py"
           }
         ]
       }
@@ -41,7 +41,7 @@ Add to `~/.claude/settings.json` (all projects) or `<project>/.claude/settings.j
 On Windows use `python` and escape backslashes, or use forward slashes:
 
 ```json
-"command": "python C:/Users/you/.claude/skills/gpt-review/hooks/stop_hook.py"
+"command": "python C:/Users/you/.claude/skills/ask-gpt/hooks/stop_hook.py"
 ```
 
 If you installed via `/plugin install`, the skill lives in the plugin cache
@@ -67,4 +67,4 @@ Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Filter stop_hook.py
 ## Uninstall
 
 Remove the hook entry from settings.json. Optionally delete
-`~/.claude/gpt-review-state/`.
+`~/.claude/ask-gpt-state/`.

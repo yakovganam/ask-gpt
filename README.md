@@ -1,4 +1,4 @@
-# gpt-review — adversarial AI code review for Claude Code
+# Ask GPT — adversarial AI code review for Claude Code
 
 A Claude Code skill (with an optional enforcement hook) that reviews your git diff
 with a second AI model (GPT via OpenAI) before a coding task is considered complete.
@@ -10,7 +10,7 @@ for high-risk changes.
 
 Without the hook, the skill is invoked by Claude when relevant or manually —
 automatic execution is not guaranteed. For deterministic enforcement, install the
-optional Stop hook (see [skills/gpt-review/hooks/](skills/gpt-review/hooks/README.md)).
+optional Stop hook (see [skills/ask-gpt/hooks/](skills/ask-gpt/hooks/README.md)).
 
 ---
 
@@ -82,20 +82,20 @@ No external Python packages — uses only the standard library.
 **Option A — as a Claude Code plugin (recommended, gets updates):**
 
 ```
-/plugin marketplace add YOUR_GITHUB_USERNAME/gpt-review
-/plugin install gpt-review
+/plugin marketplace add YOUR_GITHUB_USERNAME/ask-gpt
+/plugin install ask-gpt
 ```
 
 **Option B — manual copy:**
 
 ```bash
 # Mac / Linux
-git clone https://github.com/YOUR_GITHUB_USERNAME/gpt-review
-cp -r gpt-review/skills/gpt-review ~/.claude/skills/gpt-review
+git clone https://github.com/YOUR_GITHUB_USERNAME/ask-gpt
+cp -r ask-gpt/skills/ask-gpt ~/.claude/skills/ask-gpt
 
 # Windows (PowerShell)
-git clone https://github.com/YOUR_GITHUB_USERNAME/gpt-review
-Copy-Item -Recurse gpt-review\skills\gpt-review "$env:USERPROFILE\.claude\skills\gpt-review"
+git clone https://github.com/YOUR_GITHUB_USERNAME/ask-gpt
+Copy-Item -Recurse ask-gpt\skills\ask-gpt "$env:USERPROFILE\.claude\skills\ask-gpt"
 ```
 
 ### 2. Set your OpenAI API key
@@ -115,8 +115,8 @@ chmod 600 ~/.claude/.openai-key.txt
 ### 3. First run — Claude asks for your consent
 
 The first time the skill runs, Claude shows a privacy notice (what gets sent,
-what's protected, data-policy caveats) and asks whether to enable GPT review.
-If you confirm, it creates `~/.claude/gpt-review-config.json`.
+what's protected, data-policy caveats) and asks whether to enable Ask GPT.
+If you confirm, it creates `~/.claude/ask-gpt-config.json`.
 
 You can also create it manually:
 
@@ -129,7 +129,7 @@ You can also create it manually:
 The skill alone depends on Claude choosing to invoke it. For a deterministic
 gate that blocks finishing while unreviewed changes exist, install the Stop
 hook — it's loop-safe (blocks at most once per unique diff state).
-See [skills/gpt-review/hooks/README.md](skills/gpt-review/hooks/README.md).
+See [skills/ask-gpt/hooks/README.md](skills/ask-gpt/hooks/README.md).
 
 ---
 
@@ -139,13 +139,13 @@ Claude invokes the skill when finishing coding tasks (or always, with the hook
 installed). You can also invoke it manually:
 
 ```
-/gpt-review
+/ask-gpt
 ```
 
 Or run the script directly:
 
 ```bash
-python ~/.claude/skills/gpt-review/review.py \
+python ~/.claude/skills/ask-gpt/review.py \
   --repo-path "/path/to/repo" \
   --summary "Requirement: fix auth null-crash. Changed middleware/auth.js. Tests: npm test passed (42/42)."
 ```
@@ -170,7 +170,7 @@ python ~/.claude/skills/gpt-review/review.py \
 ### Interpretation check example
 
 ```bash
-python ~/.claude/skills/gpt-review/review.py --interpret \
+python ~/.claude/skills/ask-gpt/review.py --interpret \
   --request "make the login button blue" \
   --plan "restyle the button AND refactor the whole auth module" \
   --dry-run
@@ -193,9 +193,9 @@ button color. Catching that before coding saves an entire wrong implementation.
 ## Example output
 
 ```
-[gpt-review] Excluded sensitive files: config/secrets.env
-[gpt-review] Redacted from diff (best-effort): 1x credential-assignment
-===== GPT review (gpt-4o-2024-11-20) =====
+[ask-gpt] Excluded sensitive files: config/secrets.env
+[ask-gpt] Redacted from diff (best-effort): 1x credential-assignment
+===== Ask GPT: review (gpt-4o-2024-11-20) =====
 Solid change overall. One real issue found.
 
 [critical] The new retry loop has no backoff — under network failure it will
@@ -212,7 +212,7 @@ Solid change overall. One real issue found.
 
 ## Configuration
 
-`~/.claude/gpt-review-config.json`:
+`~/.claude/ask-gpt-config.json`:
 
 ```json
 {
@@ -265,11 +265,11 @@ open: they print a message and never block Claude from finishing.)
 ## Files
 
 ```
-gpt-review/
+ask-gpt/
 ├── .claude-plugin/
 │   ├── marketplace.json    plugin marketplace manifest
 │   └── plugin.json         plugin manifest
-├── skills/gpt-review/
+├── skills/ask-gpt/
 │   ├── SKILL.md            instructions Claude follows
 │   ├── review.py           the review script (stdlib only)
 │   ├── hooks/
@@ -283,7 +283,7 @@ gpt-review/
 
 The Stop hook is deliberately **not** auto-registered by the plugin — enforcement
 changes how your sessions behave, so it stays an explicit opt-in
-(see [skills/gpt-review/hooks/README.md](skills/gpt-review/hooks/README.md)).
+(see [skills/ask-gpt/hooks/README.md](skills/ask-gpt/hooks/README.md)).
 
 ---
 

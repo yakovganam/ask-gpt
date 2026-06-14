@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-gpt-review / stop_hook.py  (OPTIONAL)
+ask-gpt / stop_hook.py  (OPTIONAL)
 Claude Code Stop hook: blocks the session from finishing while uncommitted
-changes exist that gpt-review has not reviewed yet.
+changes exist that ask-gpt has not reviewed yet.
 
 Loop safety -- this hook can never nag forever:
 - honors stop_hook_active (never blocks twice in the same stop cycle)
@@ -10,7 +10,7 @@ Loop safety -- this hook can never nag forever:
   if Claude finishes anyway, the same diff will not trigger another block)
 - any unexpected error -> allows the stop (fails open)
 
-State files: ~/.claude/gpt-review-state/<repo-id>.json
+State files: ~/.claude/ask-gpt-state/<repo-id>.json
   reviewed_hash -- written by review.py after a successful review
   blocked_hash  -- written here when we nag about an unreviewed diff
 
@@ -22,7 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-STATE_DIR = Path.home() / ".claude" / "gpt-review-state"
+STATE_DIR = Path.home() / ".claude" / "ask-gpt-state"
 
 
 def allow() -> None:
@@ -83,8 +83,8 @@ def main() -> None:
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "gpt-review gate: there are uncommitted changes that have not been "
-            "reviewed. If you changed code this session, run the gpt-review "
+            "ask-gpt gate: there are uncommitted changes that have not been "
+            "reviewed. If you changed code this session, run the ask-gpt "
             "skill now (review.py with a summary covering: the original "
             "requirement, what changed, which tests/commands ran and their "
             "results). If you made no code changes this session, briefly tell "

@@ -1,9 +1,9 @@
 ---
-name: gpt-review
+name: ask-gpt
 description: Before handing work back to the user, send code changes to an external AI model (GPT via OpenAI) for adversarial review, then fix the real issues it finds. Run as the LAST step before any coding task is reported done. Use whenever finishing a code change and wanting a second opinion from a different AI model. Triggers on: finishing any code edit, "review before done", "check your work", "second opinion", or completing any significant implementation.
 ---
 
-# gpt-review — adversarial second-opinion from another AI model
+# Ask GPT — adversarial second-opinion from another AI model
 
 A second AI model (GPT via OpenAI) gives an independent opinion. It can catch
 failure modes the first model missed — but it is a second opinion, not a proof of
@@ -47,12 +47,12 @@ caught. **Use `--dry-run`** to preview the exact payload before any API call.
 
 ## First run — setup
 
-Check if `~/.claude/gpt-review-config.json` exists.
+Check if `~/.claude/ask-gpt-config.json` exists.
 
 **If the config does NOT exist**, show the user this message and ask their preference:
 
 ---
-> **gpt-review needs one-time setup.**
+> **Ask GPT needs one-time setup.**
 >
 > This skill sends your git diff to OpenAI for adversarial code review.
 >
@@ -71,7 +71,7 @@ Check if `~/.claude/gpt-review-config.json` exists.
   ```json
   {"enabled": true, "model": "gpt-4o"}
   ```
-  Path: `~/.claude/gpt-review-config.json`
+  Path: `~/.claude/ask-gpt-config.json`
 
 - If **no**: skip the review. The user can enable it later by creating the config file.
 
@@ -161,7 +161,7 @@ real was found, or that the review didn't run).
 ---
 
 ## Notes
-- Config: `~/.claude/gpt-review-config.json` (`enabled`, `model`)
+- Config: `~/.claude/ask-gpt-config.json` (`enabled`, `model`)
 - API key lookup: `~/.claude/.openai-key.txt` → `OPENAI_API_KEY` env var
 - Fails open: API/network errors print a message and exit 0 — never blocks you from finishing. Exception: if the safety filters themselves fail, the send is aborted.
 - Python 3.8+ required, no external dependencies

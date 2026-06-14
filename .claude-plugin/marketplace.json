@@ -1,18 +1,18 @@
 {
-  "name": "gpt-review",
-  "id": "gpt-review",
+  "name": "ask-gpt",
+  "id": "ask-gpt",
   "owner": {
     "name": "yakov"
   },
   "metadata": {
-    "description": "Adversarial second-opinion code review: GPT reviews Claude's diff before a coding task is reported done. Consent-first, best-effort secret redaction, optional enforcement hook.",
+    "description": "Ask GPT for a second opinion: interpretation-check before work and adversarial code review before handoff. Consent-first, best-effort secret redaction, optional enforcement hook.",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "gpt-review",
+      "name": "ask-gpt",
       "source": "./",
-      "description": "Before Claude hands work back, send the git diff to GPT (your own OpenAI key) for adversarial review. Privacy-first: sensitive files excluded, secrets redacted (best-effort), --dry-run preview, first-run consent. Optional Stop hook for deterministic enforcement.",
+      "description": "Get an independent second opinion from GPT (your own OpenAI key): check your plan against the request BEFORE coding (--interpret), and adversarially review the diff BEFORE handoff. Privacy-first: sensitive files excluded, secrets redacted (best-effort), --dry-run preview, first-run consent. Optional Stop hook for deterministic enforcement.",
       "version": "1.0.0",
       "author": {
         "name": "yakov"
@@ -23,7 +23,7 @@
         "openai",
         "second-opinion",
         "quality-gate",
-        "adversarial-review"
+        "interpretation-check"
       ],
       "category": "workflow"
     }

@@ -1,11 +1,11 @@
 {
-  "name": "gpt-review",
-  "description": "Adversarial second-opinion code review: GPT reviews Claude's diff before a coding task is reported done. Consent-first, best-effort secret redaction, dry-run preview, optional enforcement hook.",
+  "name": "ask-gpt",
+  "description": "Ask GPT for a second opinion: interpretation-check before work and adversarial code review before handoff. Consent-first, best-effort secret redaction, dry-run preview, optional enforcement hook.",
   "version": "1.0.0",
   "author": {
     "name": "yakov"
   },
   "license": "MIT",
-  "keywords": ["code-review", "gpt", "openai", "second-opinion", "quality-gate"],
-  "skills": ["./skills/gpt-review"]
+  "keywords": ["code-review", "gpt", "openai", "second-opinion", "quality-gate", "interpretation-check"],
+  "skills": ["./skills/ask-gpt"]
 }
