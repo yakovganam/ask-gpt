@@ -121,7 +121,7 @@ If you confirm, it creates `~/.claude/ask-gpt-config.json`.
 You can also create it manually:
 
 ```json
-{"enabled": true, "model": "gpt-4o"}
+{"enabled": true, "model": "gpt-5.4"}
 ```
 
 ### 4. Optional — install the enforcement hook
@@ -158,7 +158,7 @@ python ~/.claude/skills/ask-gpt/review.py \
 | `--mode` | `uncommitted` | `uncommitted` / `staged` / `lastcommit` |
 | `--files a.py b.py` | all | Scope review to specific files |
 | `--text "..."` | — | Review a description/diff directly |
-| `--model gpt-4o` | from config | Override the model |
+| `--model gpt-5.4` | from config | Override the model (default `gpt-5.4`) |
 | `--max-chars 20000` | 20000 | Truncate diff at N chars |
 | `--dry-run` | — | See what would be sent — no API call |
 | `--check-setup` | — | Print privacy notice and exit |
@@ -195,7 +195,7 @@ button color. Catching that before coding saves an entire wrong implementation.
 ```
 [ask-gpt] Excluded sensitive files: config/secrets.env
 [ask-gpt] Redacted from diff (best-effort): 1x credential-assignment
-===== Ask GPT: review (gpt-4o-2024-11-20) =====
+===== Ask GPT: review (gpt-5.4) =====
 Solid change overall. One real issue found.
 
 [critical] The new retry loop has no backoff — under network failure it will
@@ -217,13 +217,15 @@ Solid change overall. One real issue found.
 ```json
 {
   "enabled": true,
-  "model": "gpt-4o"
+  "model": "gpt-5.4"
 }
 ```
 
 Fields:
 - `enabled` — set to `false` to disable without deleting the config
-- `model` — any OpenAI chat model (`gpt-4o`, `gpt-4-turbo`, `gpt-4o-mini`, etc.)
+- `model` — **defaults to `gpt-5.4`** (strongest for code review). Change it to any
+  OpenAI chat model you have access to — e.g. `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`.
+  If your OpenAI account doesn't have `gpt-5.4` access, set this to `gpt-4o`.
 
 The API key is deliberately **not** a config field — use the env var or the
 key file (see Installation step 2).

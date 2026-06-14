@@ -325,7 +325,7 @@ def main() -> None:
                         choices=["uncommitted", "staged", "lastcommit"])
     parser.add_argument("--files",       nargs="*", default=[],  help="Scope diff to these files")
     parser.add_argument("--text",        default="",             help="Review this text instead of git diff")
-    parser.add_argument("--model",       default="",             help="Model override (default: from config or gpt-4o)")
+    parser.add_argument("--model",       default="",             help="Model override (default: from config or gpt-5.4)")
     parser.add_argument("--max-chars",   type=int, default=20000)
     parser.add_argument("--repo-path",   default="",             help="Git repo root")
     parser.add_argument("--dry-run",     action="store_true",    help="Preview payload -- no API call")
@@ -355,7 +355,7 @@ def main() -> None:
         print("ask-gpt is disabled (enabled=false in ~/.claude/ask-gpt-config.json).")
         sys.exit(0)
 
-    model = args.model or config.get("model", "gpt-4o")
+    model = args.model or config.get("model", "gpt-5.4")
 
     # ── Interpretation-check mode (pre-work) ──────────────────────────────
     # Different job from code review: there is no code yet. We send the user's

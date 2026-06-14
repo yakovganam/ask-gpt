@@ -69,7 +69,7 @@ Check if `~/.claude/ask-gpt-config.json` exists.
 
 - If **yes**: write the config file and continue to the review.
   ```json
-  {"enabled": true, "model": "gpt-4o"}
+  {"enabled": true, "model": "gpt-5.4"}
   ```
   Path: `~/.claude/ask-gpt-config.json`
 
@@ -133,7 +133,7 @@ python <skill-path>/review.py \
 | `--mode` | `uncommitted` | `uncommitted` / `staged` / `lastcommit` |
 | `--files a.py b.py` | all files | Scope diff to specific files |
 | `--text "..."` | — | Review text directly (non-git) |
-| `--model gpt-4o` | from config | Override the model |
+| `--model gpt-5.4` | from config | Override the model (default `gpt-5.4`) |
 | `--max-chars 20000` | `20000` | Truncate diff at N chars |
 | `--dry-run` | — | Preview payload, no API call |
 | `--check-setup` | — | Print privacy notice and exit |
@@ -161,7 +161,7 @@ real was found, or that the review didn't run).
 ---
 
 ## Notes
-- Config: `~/.claude/ask-gpt-config.json` (`enabled`, `model`)
+- Config: `~/.claude/ask-gpt-config.json` (`enabled`, `model`). Model defaults to `gpt-5.4`; change it (config or `--model`) to any model the user's OpenAI account has — e.g. `gpt-4o` if no `gpt-5.4` access.
 - API key lookup: `~/.claude/.openai-key.txt` → `OPENAI_API_KEY` env var
 - Fails open: API/network errors print a message and exit 0 — never blocks you from finishing. Exception: if the safety filters themselves fail, the send is aborted.
 - Python 3.8+ required, no external dependencies
