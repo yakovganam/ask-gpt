@@ -82,7 +82,7 @@ No external Python packages — uses only the standard library.
 **Option A — as a Claude Code plugin (recommended, gets updates):**
 
 ```
-/plugin marketplace add YOUR_GITHUB_USERNAME/ask-gpt
+/plugin marketplace add yakovganam/ask-gpt
 /plugin install ask-gpt
 ```
 
@@ -90,11 +90,11 @@ No external Python packages — uses only the standard library.
 
 ```bash
 # Mac / Linux
-git clone https://github.com/YOUR_GITHUB_USERNAME/ask-gpt
+git clone https://github.com/yakovganam/ask-gpt
 cp -r ask-gpt/skills/ask-gpt ~/.claude/skills/ask-gpt
 
 # Windows (PowerShell)
-git clone https://github.com/YOUR_GITHUB_USERNAME/ask-gpt
+git clone https://github.com/yakovganam/ask-gpt
 Copy-Item -Recurse ask-gpt\skills\ask-gpt "$env:USERPROFILE\.claude\skills\ask-gpt"
 ```
 
