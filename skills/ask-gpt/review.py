@@ -363,14 +363,18 @@ def main() -> None:
     # starts. No git, no diff. The request/context/plan can contain pasted
     # secrets, so we still redact (best-effort) before sending.
     if args.interpret:
-        if not args.request.strip() or not args.plan.strip():
-            print("Interpret mode needs --request (the user's verbatim ask) and "
-                  "--plan (your planned approach).")
+        if not args.request.strip():
+            print("Interpret mode needs --request (the user's verbatim ask).")
             sys.exit(0)
         parts = [f"--- user's verbatim request ---\n{args.request}"]
         if args.context.strip():
             parts.append(f"--- project context ---\n{args.context}")
-        parts.append(f"--- the agent's planned interpretation / approach ---\n{args.plan}")
+        if args.plan.strip():
+            parts.append(f"--- the agent's planned interpretation / approach ---\n{args.plan}")
+        else:
+            # Pre-prompt use (e.g. the UserPromptSubmit hook): no plan exists yet.
+            parts.append("--- the agent has NOT planned yet; analyze the request "
+                         "itself for ambiguity, scope, and risks ---")
         user_msg = "\n\n".join(parts)
         try:
             user_msg, redacted = redact(user_msg)
